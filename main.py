@@ -4,9 +4,7 @@ import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-import SubCategory
 from Category import Category
-import BestSeller
 
 
 class Amazon_Scraper:
