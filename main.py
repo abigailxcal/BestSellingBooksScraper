@@ -31,6 +31,7 @@ class Amazon_Scraper:
             last_height = new_height
     
     #accesses given url and creates/returns soup object
+    # RENAME THIS
     def parse_url_content(self, url=None):  
         '''
         when called, throw it in a try except block 
@@ -50,6 +51,7 @@ class Amazon_Scraper:
         del html_categories[0]  # delete the first result because it is not a "category"
         return html_categories
     
+    
     # turns realtive URL into absolute URL 
     def clean_url(self, html_category):
         a_tag = html_category.find('a')  # find the 'a' tag (provides category name and part of the category URL),
@@ -62,26 +64,30 @@ class Amazon_Scraper:
         print("Category name: ", a_tag)
         return a_tag
 
+    # don't need anymore 
     def extract_books(self, soup):
         book_results = soup.find_all('div', {'id': 'gridItemRoot'})  # create a list of all HTML code that represents a book listing
         #print("extract_books: ", book_results)
         return book_results
     
-    def get_book_titles(self,extracted_book_info):
+    def get_book_titles(self,soup):
         book_titles = []
-        for book in range(len(extracted_book_info)):
-            book_titles.append(extracted_book_info[book].div.a.img.get('alt'))
+        book_results = soup.find_all('div', {'id': 'gridItemRoot'})
+        for book in book_results:
+            book_titles.append(book.div.a.img.get('alt'))
         print(book_titles)
         return book_titles
+
+    def extract_subcategories(self,soup):
+        subcategories = soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})
+        if subcategories and 'span' in str(subcategories[0]):
+            return subcategories[1:]
+        return subcategories
     
-    def has_subcategories(self,soup):
-        sub_results = soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})
-        string_sub = str(sub_results[0])
-        span_idx = string_sub.find('span')
-        if span_idx != -1:  # check if the first item in the list contains the 'span' tag
-            del sub_results[0]  # delete the span tag item because it does not represent a subcategory
+    def quit_driver(self):
+        self.driver.quit()
 
-
+# SIMPLY MORE 
 def main():
     url = 'https://www.amazon.com/gp/bestsellers/books/ref=zg_bs_nav_0'
     scraper = Amazon_Scraper(url)
