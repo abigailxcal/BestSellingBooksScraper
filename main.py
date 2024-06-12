@@ -68,14 +68,12 @@ class Amazon_Scraper:
     
     def create_subcategory_object(self, html_subcategory):
         subcat_name = self.get_category_name(html_subcategory)
-        print("*** SUBCATEGORY NAME: ", subcat_name)
         subcat_url = self.get_category_url(html_subcategory)
         subcategory = Category(subcat_name,subcat_url)
         try: 
             subcat_soup = self.parse_url_content(subcat_url)
             subcategory.add_best_selling_books(self.get_book_titles(subcat_soup))
             other_subcategories = self.extract_subcategories(subcat_soup) 
-
             #if the subcateogry contains more subcategories 
             if len(other_subcategories)!= 0:    
                 for subcat in other_subcategories:
@@ -91,7 +89,6 @@ class Amazon_Scraper:
 
     def create_category_object(self,html_category):
         name = self.get_category_name(html_category)
-        print("CATEGORY NAME: ", name)
         url = self.get_category_url(html_category)
         category = Category(name,url)
         try: 
@@ -122,34 +119,6 @@ def main():
         categories.append(category)
     scraper.quit_driver()
 
-
-
-
-
-'''
-        print("*******CATEGORY********")
-        #category_url_list.append(scraper.clean_url(category))
-        category_url = scraper.clean_url(category)   # go to each link of category list
-        soup = scraper.parse_url_content(category_url)   #parse the data of each category url
-        name = scraper.get_category_name(category)
-        new_category_obj = Category(name,category_url)
-        bestsellers = scraper.get_book_titles(scraper.extract_books(soup))
-        new_category_obj.set_best_selling_books(bestsellers)
-        
-        subcategory_list = scraper.extract_categories(soup)
-        print("\t\tSUBCATEGORY: ",subcategory_list[0])
-        while (str(subcategory_list[0])).find('span') != -1:
-            del subcategory_list[0]
-            for subcategory in subcategory_list:
-                
-                subcategory_url = scraper.clean_url(subcategory)
-                soup = scraper.parse_url_content(subcategory_url)
-                subcategory_name = scraper.get_category_name(subcategory)
-                print("\tSubcategory: ", subcategory_name)
-                subcategory_obj = Category(subcategory_name,subcategory_url)
-                subcategory_bestsellers = scraper.get_book_titles(scraper.extract_books(soup))
-                subcategory_obj.set_best_selling_books(subcategory_bestsellers)
-            '''
 
 if __name__ == '__main__':
     main()
