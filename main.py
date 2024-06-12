@@ -1,4 +1,4 @@
-import csv
+import json
 import random
 import time
 from bs4 import BeautifulSoup
@@ -55,7 +55,7 @@ class Amazon_Scraper:
     def get_book_titles(self,soup):
         book_titles = []
         book_results = soup.find_all('div', {'id': 'gridItemRoot'})
-        for book in book_results[:20]:
+        for book in book_results[:10]:
             book_titles.append(book.div.a.img.get('alt'))
         print(book_titles)
         return book_titles
@@ -102,7 +102,21 @@ class Amazon_Scraper:
         except Exception as e:
             print(f"Error accessing {name}: {e}")
         return category
+    
+    # def write_categories_to_csv(self, categories, filename):
+    #     """Write categories and their details to a CSV file."""
+    #     with open(filename, 'w', newline='') as file:
+    #         writer = csv.writer(file)
+    #         writer.writerow(['Category', 'Bestselling Books', 'Subcategory', 'Subcategory Bestselling Books'])
+    #         for category in categories:
+    #             writer.writerow([category.name, ', '.join(category.books)])
+    #             for subcategory in category.subcategories:
+    #                 writer.writerow(['', '', subcategory.name, ', '.join(subcategory.books)])
 
+    def write_categories_to_json(self, categories, filename):
+        """Write categories and their details to a JSON file."""
+        with open(filename, 'w') as file:
+            json.dump([category.to_dict() for category in categories], file, indent=4)
 
     def quit_driver(self):
         self.driver.quit()
@@ -117,6 +131,7 @@ def main():
     for category_html in category_htmls[:5]:
         category = scraper.create_category_object(category_html)
         categories.append(category)
+    scraper.write_categories_to_csv(categories, 'amazonCategoriesUpdates.csv')
     scraper.quit_driver()
 
 

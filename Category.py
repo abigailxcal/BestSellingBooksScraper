@@ -26,3 +26,11 @@ class Category:    # class that contains name, bestselling books, and subcategor
 
     def get_subcategories(self):
         return self.subcategories
+    
+    def to_dict(self):
+         return {
+            'name': self.category_name,
+            'url': self.category_url,
+            'books': self.get_best_selling_books(),
+            'subcategories': [subcategory.to_dict() for subcategory in self.subcategories]
+        }
