@@ -15,8 +15,8 @@ class Category:    # class that contains name, bestselling books, and subcategor
     def get_url(self):
         return self.category_url
 
-    def add_best_selling_books(self, book):
-        self.best_selling_books.append(book)
+    def add_best_selling_books(self, books):
+        self.best_selling_books = books
 
     def get_best_selling_books(self):
         return self.best_selling_books

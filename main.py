@@ -8,9 +8,8 @@ from Category import Category
 
 
 class Amazon_Scraper:
-
+    
     PATH_TO_DRIVER = Service('/Users/abigailcalderon/Downloads/chromedriver-mac-arm64/chromedriver')
-
     def __init__(self, url) -> None:
         self.driver = webdriver.Chrome(service=self.PATH_TO_DRIVER)
         self.url = url
@@ -19,11 +18,8 @@ class Amazon_Scraper:
         SCROLL_PAUSE_TIME = 1
         last_height = self.driver.execute_script("return document.body.scrollHeight")    # get height of first scroll
         while True:
-
-            # why does it say scrollheight-1000? is it bc if u scroll all the way to the bottom, it doesn't scroll infinitely?
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight-1000);")  
             time.sleep(SCROLL_PAUSE_TIME)
-
             # get height of new scroll 
             new_height = self.driver.execute_script("return document.body.scrollHeight")     
             if new_height == last_height:
@@ -31,11 +27,7 @@ class Amazon_Scraper:
             last_height = new_height
     
     #accesses given url and creates/returns soup object
-    # RENAME THIS
     def parse_url_content(self, url=None):  
-        '''
-        when called, throw it in a try except block 
-        '''
         if url is None:
             url = self.url
         self.driver.get(url)
@@ -44,36 +36,26 @@ class Amazon_Scraper:
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         return soup
 
-    # returns list category html info for each url 
+    # returns list of category html info for each url 
     def extract_categories(self,soup):  
         html_categories = soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})  # list of category results
-        #print("html categories: ", html_categories)
         del html_categories[0]  # delete the first result because it is not a "category"
         return html_categories
     
-    
-    # turns realtive URL into absolute URL 
-    def clean_url(self, html_category):
-        a_tag = html_category.find('a')  # find the 'a' tag (provides category name and part of the category URL),
-        category_url = 'https://www.amazon.com' + a_tag.get('href')
-        print("URL: ", category_url)
-        return category_url
-    
+    # returns list of all category urls that have been extracted from parser 
+    def get_category_url(self,html_category):
+        a_tag = html_category.find('a')
+        url = 'https://www.amazon.com' + a_tag.get('href')    
+        return url
+
     def get_category_name(self, html_category):
         a_tag = html_category.find('a').text
-        print("Category name: ", a_tag)
         return a_tag
-
-    # don't need anymore 
-    def extract_books(self, soup):
-        book_results = soup.find_all('div', {'id': 'gridItemRoot'})  # create a list of all HTML code that represents a book listing
-        #print("extract_books: ", book_results)
-        return book_results
     
     def get_book_titles(self,soup):
         book_titles = []
         book_results = soup.find_all('div', {'id': 'gridItemRoot'})
-        for book in book_results:
+        for book in book_results[:20]:
             book_titles.append(book.div.a.img.get('alt'))
         print(book_titles)
         return book_titles
@@ -84,19 +66,67 @@ class Amazon_Scraper:
             return subcategories[1:]
         return subcategories
     
+    def create_subcategory_object(self, html_subcategory):
+        subcat_name = self.get_category_name(html_subcategory)
+        print("*** SUBCATEGORY NAME: ", subcat_name)
+        subcat_url = self.get_category_url(html_subcategory)
+        subcategory = Category(subcat_name,subcat_url)
+        try: 
+            subcat_soup = self.parse_url_content(subcat_url)
+            subcategory.add_best_selling_books(self.get_book_titles(subcat_soup))
+            other_subcategories = self.extract_subcategories(subcat_soup) 
+
+            #if the subcateogry contains more subcategories 
+            if len(other_subcategories)!= 0:    
+                for subcat in other_subcategories:
+                    new_subcategory = self.create_subcategory_object(subcat)
+                    if new_subcategory:
+                        subcategory.add_subcategory(subcategory)
+            return subcategory
+        
+        except Exception as e:
+            print(f"Error accessing subcategory {subcat_name}: {e}")
+            return None
+
+
+    def create_category_object(self,html_category):
+        name = self.get_category_name(html_category)
+        print("CATEGORY NAME: ", name)
+        url = self.get_category_url(html_category)
+        category = Category(name,url)
+        try: 
+            category_soup = self.parse_url_content(url)
+            category.add_best_selling_books(self.get_book_titles(category_soup))
+            html_subcategories = self.extract_subcategories(category_soup)
+            for subcat in html_subcategories:
+                subcategory = self.create_subcategory_object(subcat)
+                if subcategory:
+                    category.add_subcategory(subcategory)
+        except Exception as e:
+            print(f"Error accessing {name}: {e}")
+        return category
+
+
     def quit_driver(self):
         self.driver.quit()
 
-# SIMPLY MORE 
+
 def main():
     url = 'https://www.amazon.com/gp/bestsellers/books/ref=zg_bs_nav_0'
     scraper = Amazon_Scraper(url)
     soup = scraper.parse_url_content()
-    #soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})
-    category_list = scraper.extract_categories(soup)  #extracts html info of categories of first page 
-    category_url_list=[]
-    
-    for category in category_list:
+    categories = []
+    category_htmls = scraper.extract_categories(soup)  #extracts html info of categories of first page 
+    for category_html in category_htmls[:5]:
+        category = scraper.create_category_object(category_html)
+        categories.append(category)
+    scraper.quit_driver()
+
+
+
+
+
+'''
         print("*******CATEGORY********")
         #category_url_list.append(scraper.clean_url(category))
         category_url = scraper.clean_url(category)   # go to each link of category list
@@ -119,7 +149,7 @@ def main():
                 subcategory_obj = Category(subcategory_name,subcategory_url)
                 subcategory_bestsellers = scraper.get_book_titles(scraper.extract_books(soup))
                 subcategory_obj.set_best_selling_books(subcategory_bestsellers)
-            
+            '''
 
 if __name__ == '__main__':
     main()
