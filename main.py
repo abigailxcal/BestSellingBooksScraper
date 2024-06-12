@@ -103,15 +103,6 @@ class Amazon_Scraper:
             print(f"Error accessing {name}: {e}")
         return category
     
-    # def write_categories_to_csv(self, categories, filename):
-    #     """Write categories and their details to a CSV file."""
-    #     with open(filename, 'w', newline='') as file:
-    #         writer = csv.writer(file)
-    #         writer.writerow(['Category', 'Bestselling Books', 'Subcategory', 'Subcategory Bestselling Books'])
-    #         for category in categories:
-    #             writer.writerow([category.name, ', '.join(category.books)])
-    #             for subcategory in category.subcategories:
-    #                 writer.writerow(['', '', subcategory.name, ', '.join(subcategory.books)])
 
     def write_categories_to_json(self, categories, filename):
         """Write categories and their details to a JSON file."""
