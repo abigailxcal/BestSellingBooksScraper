@@ -59,53 +59,92 @@ class Amazon_Scraper:
         for book in book_results[:10]:
             book_titles.append(book.div.a.img.get('alt'))
         return book_titles
-
-    def extract_subcategory_elements(self,soup):
-        subcategories = soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})
-        if subcategories and 'span' in str(subcategories[0]):
-            return subcategories[1:]
-        return subcategories
     
+
+    def extract_subcategory_elements(self,soup,subcat_name = None):
+        group_div = soup.find('div', {
+            'role': 'group',
+            'class': '_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz'
+        })
+        # could be better
+        if group_div:
+            subcategory_elements = group_div.find_all('div', recursive=True)
+            if subcat_name is not None:
+                for elem in subcategory_elements:
+                    if subcat_name and 'span' in str(elem):
+                        return []
+            return subcategory_elements
+        return []
+                    
+                
+
+        '''#<div role="group" class="_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz"><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><span class="_p13n-zg-nav-tree-all_style_zg-selected__1SfhQ">Landmarks &amp; Monuments</span></div><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><a href="/Best-Sellers-Books-Religious-Building-Architecture/zgbs/books/882340/ref=zg_bs_nav_books_4_3564986011">Religious Buildings</a></div><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><a href="/Best-Sellers-Books-Residential-Architecture/zgbs/books/1007/ref=zg_bs_nav_books_4_3564986011">Residential</a></div></div>
+        #if span is part of ^^, then the current subcategory does not have any other subcategories
+        subcategories = soup.find_all('div', {
+            'role': 'group',
+            'class': '_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz'
+        })
+    
+        #subcategories = soup.find_all('div', {'role': 'treeitem' {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'}})
+        #print("extract_subcat_elements 'subcategories' = ", subcategories)
+        #if subcategories and 'span' in str(subcategories[0]):
+
+        #see what is thef rist element first! 
+        if subcategories and 'span' in str(subcategories[0]):
+            print("subcategories: ", subcategories)
+            print("must delete the first result: ", subcategories[0])
+            return subcategories[1:]
+        return subcategories'''
+    
+    # create and return a subcategory object
     def create_subcategory(self, subcategory_element):
         subcategory_name = self.get_category_name(subcategory_element)
         subcategory_url = self.get_category_url(subcategory_element)
         subcategory = Category(subcategory_name, subcategory_url)
         try: 
+            #print("Subcategory Name: ", subcategory_name)
             subcat_soup = self.get_soup(subcategory_url)
             subcategory.add_best_selling_books(self.get_book_titles(subcat_soup))
-            nested_subcategories = self.extract_subcategory_elements(subcat_soup) 
+            nested_subcategories = self.extract_subcategory_elements(subcat_soup, subcategory_name)
 
             #if the subcateogry contains more subcategories 
-            if len(nested_subcategories)!= 0:    
+            if len(nested_subcategories) != 0:  
+                #print(subcategory_name, " has ", (len(nested_subcategories)), " many subcategories")
                 for nested_subcat_element in nested_subcategories:
-                    nested_subcategory = self.create_subcategory_object(nested_subcat_element)
+                    #print(subcategory_name,"'s subcategory: ",self.get_category_name(nested_subcat_element) )
+                    #print("nested_subcat_element: ", nested_subcat_element)
+                    nested_subcategory = self.create_subcategory(nested_subcat_element)
                     if nested_subcategory:
-                        subcategory.add_subcategory(nested_subcategory)
+                        subcategory.add_subcategory(nested_subcategory)  
             return subcategory
+
         except Exception as e:
             print(f"Error accessing subcategory {subcategory_name}: {e}")
             return None
+        
 
+    
     #create and return category object
     def create_category(self,category_element):
         category_name = self.get_category_name(category_element)
+        #print("Category Name: ", category_name)
         category_url = self.get_category_url(category_element)
         category = Category(category_name,category_url)
         try: 
             category_soup = self.get_soup(category_url)
             category.add_best_selling_books(self.get_book_titles(category_soup))
             subcategory_elements = self.extract_subcategory_elements(category_soup)
-            for subcategory_element in subcategory_elements:
+            #print(category_name," has ", (len(subcategory_elements)), " many subcategories")
+            for subcategory_element in subcategory_elements[:5]:    #LIMIT
                 subcategory = self.create_subcategory(subcategory_element)
                 if subcategory:
                     category.add_subcategory(subcategory)
         except Exception as e:
             print(f"Error accessing {category_name}: {e}")
         return category
-    
 
+    # write categories and their details to a JSON file
     def write_categories_to_json(self, categories, filename):
-        """Write categories and their details to a JSON file."""
         with open(filename, 'w') as file:
             json.dump([category.to_dict() for category in categories], file, indent=4)
 
@@ -114,15 +153,15 @@ class Amazon_Scraper:
 
 
 def main():
-    url = 'https://www.amazon.com/gp/bestsellers/books/ref=zg_bs_nav_0'
-    scraper = Amazon_Scraper(url)
+    base_url = 'https://www.amazon.com/gp/bestsellers/books/ref=zg_bs_nav_0'
+    scraper = Amazon_Scraper(base_url)
     soup = scraper.get_soup()
     categories = []
     category_htmls = scraper.extract_category_elements(soup)  #extracts html info of categories of first page 
     for category_html in category_htmls[:5]:
         category = scraper.create_category(category_html)
         categories.append(category)
-    scraper.write_categories_to_json(categories, 'amazonCategoriesUpdates.csv')
+    scraper.write_categories_to_json(categories, 'amazon_bestselling_books.json')
     scraper.quit_driver()
 
 
