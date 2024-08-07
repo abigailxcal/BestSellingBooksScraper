@@ -1,5 +1,4 @@
 import json
-import random
 import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -7,9 +6,9 @@ from selenium.webdriver.chrome.service import Service
 from Category import Category
 
 
+
 class Amazon_Scraper:
-    
-    PATH_TO_DRIVER = Service('/Users/abigailcalderon/Downloads/chromedriver-mac-arm64/chromedriver')
+    PATH_TO_DRIVER = Service('/opt/homebrew/bin/chromedriver')
     def __init__(self, url) -> None:
         self.driver = webdriver.Chrome(service=self.PATH_TO_DRIVER)
         self.url = url
@@ -33,40 +32,33 @@ class Amazon_Scraper:
             url = self.url
         self.driver.get(url)
         self.scroll()
-        time.sleep(random.randint(0, 2))    #redundant? 
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         return soup
 
     # returns list of category html info for each url 
     def extract_category_elements(self,soup):  
-        category_element = soup.find_all('div', {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})  # list of category results
+        category_element = soup.find_all('div', 
+                                         {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'})  # list of category results
         del category_element[0]  # delete the first result because it is not a "category"
         return category_element
     
     # returns list of all category urls that have been extracted from parser 
     def get_category_url(self,category_element):
-        a_tag = category_element.find('a')
-        url = 'https://www.amazon.com' + a_tag.get('href')    
-        return url
+        a_tag = category_element.find('a')   
+        return 'https://www.amazon.com' + a_tag.get('href')   
 
     def get_category_name(self, category_element):
-        a_tag = category_element.find('a').text
-        return a_tag
+        return category_element.find('a').text
     
     def get_book_titles(self,soup):
-        book_titles = []
-        book_results = soup.find_all('div', {'id': 'gridItemRoot'})
-        for book in book_results[:10]:
-            book_titles.append(book.div.a.img.get('alt'))
-        return book_titles
+        book_results = soup.find_all('div',{'class': '_cDEzb_p13n-sc-css-line-clamp-1_1Fn1y'})
+        return [book.get_text() for book in book_results[:10]]
     
 
     def extract_subcategory_elements(self,soup,subcat_name = None):
         group_div = soup.find('div', {
             'role': 'group',
-            'class': '_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz'
-        })
-        # could be better
+            'class': '_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz'})
         if group_div:
             subcategory_elements = group_div.find_all('div', recursive=True)
             if subcat_name is not None:
@@ -77,24 +69,6 @@ class Amazon_Scraper:
         return []
                     
                 
-
-        '''#<div role="group" class="_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz"><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><span class="_p13n-zg-nav-tree-all_style_zg-selected__1SfhQ">Landmarks &amp; Monuments</span></div><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><a href="/Best-Sellers-Books-Religious-Building-Architecture/zgbs/books/882340/ref=zg_bs_nav_books_4_3564986011">Religious Buildings</a></div><div role="treeitem" class="_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8"><a href="/Best-Sellers-Books-Residential-Architecture/zgbs/books/1007/ref=zg_bs_nav_books_4_3564986011">Residential</a></div></div>
-        #if span is part of ^^, then the current subcategory does not have any other subcategories
-        subcategories = soup.find_all('div', {
-            'role': 'group',
-            'class': '_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz'
-        })
-    
-        #subcategories = soup.find_all('div', {'role': 'treeitem' {'class': '_p13n-zg-nav-tree-all_style_zg-browse-item__1rdKf _p13n-zg-nav-tree-all_style_zg-browse-height-large__1z5B8'}})
-        #print("extract_subcat_elements 'subcategories' = ", subcategories)
-        #if subcategories and 'span' in str(subcategories[0]):
-
-        #see what is thef rist element first! 
-        if subcategories and 'span' in str(subcategories[0]):
-            print("subcategories: ", subcategories)
-            print("must delete the first result: ", subcategories[0])
-            return subcategories[1:]
-        return subcategories'''
     
     # create and return a subcategory object
     def create_subcategory(self, subcategory_element):
@@ -156,9 +130,11 @@ def main():
     base_url = 'https://www.amazon.com/gp/bestsellers/books/ref=zg_bs_nav_0'
     scraper = Amazon_Scraper(base_url)
     soup = scraper.get_soup()
+
+
     categories = []
     category_htmls = scraper.extract_category_elements(soup)  #extracts html info of categories of first page 
-    for category_html in category_htmls[:5]:
+    for category_html in category_htmls[:2]:
         category = scraper.create_category(category_html)
         categories.append(category)
     scraper.write_categories_to_json(categories, 'amazon_bestselling_books.json')
@@ -167,3 +143,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

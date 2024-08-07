@@ -1,5 +1,6 @@
-class Category:    # class that contains name, bestselling books, and subcategory (as objects) of each category
 
+class Category: 
+       # class that contains name, bestselling books, and subcategory (as objects) of each category
     def __init__(self, name, url):
         self.best_selling_books = []
         self.subcategories = []
@@ -34,3 +35,4 @@ class Category:    # class that contains name, bestselling books, and subcategor
             'books': self.get_best_selling_books(),
             'subcategories': [subcategory.to_dict() for subcategory in self.subcategories]
         }
+    
