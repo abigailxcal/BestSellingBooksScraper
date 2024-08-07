@@ -134,7 +134,7 @@ def main():
 
     categories = []
     category_htmls = scraper.extract_category_elements(soup)  #extracts html info of categories of first page 
-    for category_html in category_htmls[:2]:
+    for category_html in category_htmls[:10]: #limit of 10 categories will be parsed
         category = scraper.create_category(category_html)
         categories.append(category)
     scraper.write_categories_to_json(categories, 'amazon_bestselling_books.json')
