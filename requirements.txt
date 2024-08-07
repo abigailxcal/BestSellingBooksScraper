@@ -1,4 +1,2 @@
-json
-time
 bs4
 selenium
