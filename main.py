@@ -1,5 +1,6 @@
 import json
 import time
+import random
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -32,6 +33,7 @@ class Amazon_Scraper:
             url = self.url
         self.driver.get(url)
         self.scroll()
+        time.sleep(random.randint(0, 2))
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         return soup
 
@@ -76,7 +78,7 @@ class Amazon_Scraper:
         subcategory_url = self.get_category_url(subcategory_element)
         subcategory = Category(subcategory_name, subcategory_url)
         try: 
-            #print("Subcategory Name: ", subcategory_name)
+            print("Subcategory Name: ", subcategory_name)
             subcat_soup = self.get_soup(subcategory_url)
             subcategory.add_best_selling_books(self.get_book_titles(subcat_soup))
             nested_subcategories = self.extract_subcategory_elements(subcat_soup, subcategory_name)
@@ -101,15 +103,15 @@ class Amazon_Scraper:
     #create and return category object
     def create_category(self,category_element):
         category_name = self.get_category_name(category_element)
-        #print("Category Name: ", category_name)
+        print("Category Name: ", category_name)
         category_url = self.get_category_url(category_element)
         category = Category(category_name,category_url)
         try: 
             category_soup = self.get_soup(category_url)
             category.add_best_selling_books(self.get_book_titles(category_soup))
             subcategory_elements = self.extract_subcategory_elements(category_soup)
-            #print(category_name," has ", (len(subcategory_elements)), " many subcategories")
-            for subcategory_element in subcategory_elements[:5]:    #LIMIT
+            print(category_name," has ", (len(subcategory_elements)), " many subcategories")
+            for subcategory_element in subcategory_elements:    #LIMIT
                 subcategory = self.create_subcategory(subcategory_element)
                 if subcategory:
                     category.add_subcategory(subcategory)
